@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>D3: Heat Map</title>
+
+        <style>
+            body {
+                background-color: rgb(64, 136, 46);
+            }
+     div.tooltip {	
+        position: absolute;			
+        text-align: center;					
+        padding: 2px;				
+        font: 14px sans-serif;		
+        background: rgb(44, 50, 58);	
+        border: 0px;		
+        border-radius: 8px;
+        color:white;
+        pointer-events: none;	
+    }
+        </style>
+    </head>
+
+<body>
+
+    <div style="padding-left:50px;">
+    <h1 id="title">Monthly Global Land-Surface Temperature</h1>
+    <h3 id="description">1753 - 2015: base temperature 8.66℃</h3>
+</div>
+
+
+<script src="https://cdn.freecodecamp.org/testable-projects-fcc/v1/bundle.js"></script>
+<script src="https://d3js.org/d3.v5.js"></script>
+<script>
+
+
+document.addEventListener('DOMContentLoaded', function(){
+    fetch('https://raw.githubusercontent.com/freeCodeCamp/ProjectReferenceData/master/global-temperature.json')
+    .then(response => response.json())
+    .then(data =>{ 
+        const years = [];
+        const all = [];
+//collecting data
+        for(let i=0; i<data.monthlyVariance.length;i++){
+            all[i]= [];
+            years[i]=data.monthlyVariance[i].year;
+            all[i].push(data.monthlyVariance[i].year,data.monthlyVariance[i].month-1,data.monthlyVariance[i].variance,
+            Math.round((data.baseTemperature+data.monthlyVariance[i].variance + Number.EPSILON) * 10) / 10) ;
+        }
+        
+    const w = 1500;
+    const h = 500;
+    const padding = 60;
+    const xScale = d3.scaleLinear()
+                     .domain([d3.min(years, (d) =>d), d3.max(years, (d) => d)])
+                     .range([padding, w - padding]);
+
+    const yScale = d3.scaleBand()
+                     .domain([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]) //months
+                     .rangeRound([0, h-58], 0, 0);
+//div for tooltip:
+var div = d3.select("body").append("div")
+    .attr("class","tooltip")
+    .style("opacity",0)
+    .attr("id","tooltip")
+    // #############################
+
+    const svg = d3.select("body")
+                  .append("svg")
+                  .attr("width", w)
+                  .attr("height", h);
+
+         svg.selectAll("rect")
+            .data(all)
+            .enter()
+            .append("rect")
+                .attr("x", (d, i) => xScale(d[0]))
+                .attr("y", (d, i) => yScale(d[1]) )
+                .attr("width", 2.99)
+                .attr("height", (d,i) => {
+          return yScale.bandwidth() } )
+          .attr("fill",(d,i) =>{
+              if(d[2]<-5.451){
+                return '#323e94';
+              }else if(d[2]>=-5.451&&d[2]<-3.926){
+                  return '#6472de';
+              }else if(d[2]>=-3.926&&d[2]<-2.401){
+                  return '#8391fc';
+              }else if(d[2]>=-2.401&&d[2]<-0.876){
+                  return '#b8c0ff';
+              }
+              else if(d[2]>=-0.876&&d[2]<0.649){
+                  return '#f5f6ff';
+              }else if(d[2]>=0.649&&d[2]<2.174){
+                  return '#ffc4c4';
+              }else if(d[2]>=2.174&&d[2]<3.699){
+                  return '#f25252';
+              }
+              else if(d[2]>=3.699&&d[2]<=5.699){
+                  return '#b32d2d';
+              }
+          })
+
+                .attr("class","cell")
+
+                .attr('data-month', function(d, i) {
+             return all[i][1]
+            })
+                .attr('data-year', function(d, i) {
+            return all[i][0]
+            })
+                .attr('data-temp', function(d, i) {
+            return all[i][2]
+            })
+
+            .on("mouseover", function(d,i) {
+       div.transition()
+       .duration(200)
+       .style("opacity", .9);
+       div.html("<p>Year: "+d[0]+ "<p>"+ d[3]+"\xB0C</p>"+"<p>"+
+        Math.round((d[2]+ Number.EPSILON) * 10) / 10+"\xB0C</p>")
+       .style("left", (d3.event.pageX) + "px")		
+      .style("top", (d3.event.pageY ) + "px")	
+      .attr('data-date', all[i][0])
+      .attr('data-year', d[0])
+      d3.select(this)
+      .style("stroke", "red")
+    })
+    .on("mouseout",function(d){
+       div.transition()
+       .duration(500)
+       .style("opacity", 0)
+       d3.select(this)
+      .style("stroke", "none")
+    })  
+
+
+    const xAxis = d3.axisBottom(xScale).tickFormat(d3.format("d"));
+    
+    const yAxis = d3.axisLeft(yScale).tickFormat(function(month){
+        var date = new Date(0);
+        date.setUTCMonth(month);
+        return d3.utcFormat("%B")(date);
+      })
+
+    svg.append("g")
+       .attr("transform", "translate(0," + (h - padding) + ")")
+       .attr("id","x-axis")
+           .attr("class","tick")
+           .call(xAxis);
+    svg.append("g")
+       .attr("transform", "translate(" + padding + ",0)")
+       .attr("id","y-axis")
+           .attr("class","tick")
+           .call(yAxis) 
+    })
+    
+})
+
+  </script>
+
+<script>
+    const w2 = 700;
+    const h2 = 100;
+    padding2=30;
+    const padding = 60;
+    const xScale = d3.scaleLinear()
+                     .domain(0,1000)
+                     .range([padding2, w2 - padding2]);
+
+    const yScale = d3.scaleLinear()
+    .domain([0,200]) //months
+    .range([h2 - padding2, padding2]);
+
+    const svg = d3.select("body")
+                  .append("svg")
+                  .attr("width", w2)
+                  .attr("height", h2)
+                  .attr("id","legend")
+
+const rects =[20,40,60,80,100,120,140,160];
+
+const temps = [3.21,4.74,6.26,7.79,9.3,10.83,12.35]
+
+svg.selectAll("rect")
+            .data(rects)
+            .enter()
+            
+            .append("rect")
+                .attr("x", (d, i) => d*3)
+                .attr("y", (d, i) => yScale(90) )
+                .attr("width", (d) => 40)
+                .attr("height", 30)
+            .attr("fill", (d) =>{
+                if(d==20){
+                return '#323e94';
+              }else if(d==40){
+                  return '#6472de';
+              }else if(d==60){
+                  return '#8391fc';
+              }else if(d==80){
+                  return '#b8c0ff';
+              }
+              else if(d==100){
+                  return '#f5f6ff';
+              }else if(d==120){
+                  return '#ffc4c4';
+              }else if(d==140){
+                  return '#f25252';
+              }
+              else if(d==160){
+                  return '#b32d2d';
+              }
+            })
+        svg.selectAll("text")
+       .data(temps)
+       .enter()
+        .append("text")
+       .text((d) => d)
+       .attr("x", (d, i) => {
+           if(i>=5){
+               return (80+i*62)
+            }else{
+                return (100+i*62)
+            }
+         } )
+       .attr("y", (d, i) => h2)
+                
+</script>
+    
+</body>
+</html>
